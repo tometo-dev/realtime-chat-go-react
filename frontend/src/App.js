@@ -1,5 +1,4 @@
 import React from 'react'
-import './App.css'
 import {connect, sendMsg} from "./api"
 import Header from "./components/Header";
 import ChatHistory from "./components/ChatHistory";
