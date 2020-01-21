@@ -2,59 +2,26 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
-	"github.com/gorilla/websocket"
+	"github.com/tsuki42/realtime-chat-go-react/pkg/websocket"
 )
-
-// Define a upgrader
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-
-	// We'll need to check the origin of our connection.
-	// This will allow us to make requests from our React dev server.
-	CheckOrigin: func(r *http.Request) bool { return true },
-}
-
-// define a reader which will listen for new messages being sent to our websocket endpoint
-func reader(conn *websocket.Conn) {
-	for {
-		messageType, p, err := conn.ReadMessage()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-
-		fmt.Println(string(p))
-
-		if err := conn.WriteMessage(messageType, p); err != nil {
-			log.Println(err)
-			return
-		}
-	}
-}
 
 // define the websocket endpoint
 func serveWs(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(r.Host)
 
 	// upgrade this connection
-	ws, err := upgrader.Upgrade(w, r, nil)
+	ws, err := websocket.Upgrade(w, r)
 	if err != nil {
-		log.Println(err)
+		_, _ = fmt.Fprintf(w, "%+v\n", err)
 	}
 
-	// listen indefinitely for new messages coming through on our WebSocket connection
-	reader(ws)
+	go websocket.Writer(ws)
+	websocket.Reader(ws)
 }
 
 func setupRoutes() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(w, "simple server")
-	})
-
 	http.HandleFunc("/ws", serveWs)
 }
 
